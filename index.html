@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="utf-8">
+		<title>Hello MUI</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1,maximum-scale=1, user-scalable=no">
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black">
+		<link rel="stylesheet" href="css/mui.min.css">
+		<script src="js/mui.min.js"></script>
+	</head>
+	<body>
+		<button id="btn">nativeJs弹框</button>
+		<button id="btn1">H5+弹框</button>
+		<button id="btn2">图片相册调用</button>
+		
+		<button id="ajax">ajax</button>
+		<div id="info"></div>
+	</body>
+<script>
+// 保存iOS平台导入的类对象
+var UIAlertView=null;
+// 保存Android导入对象和全局环境对象
+var AlertDialog=null,mainActivity=null;
+// H5 plus事件处理
+function plusReady(){
+	switch ( plus.os.name ) {
+		case "Android":
+		// 程序全局环境对象
+		mainActivity = plus.android.runtimeMainActivity();
+		// 导入AlertDialog类
+		AlertDialog = plus.android.importClass("android.app.AlertDialog");
+		break;
+		case "iOS":
+		// 导入UIAlertView类
+		UIAlertView = plus.ios.importClass("UIAlertView");
+		break;
+		default:
+		break;
+	}
+}
+if(window.plus){
+	plusReady();
+}else{
+	document.addEventListener("plusready",plusReady,false);
+}
+
+function njsAlertForiOS(){
+	// 创建UIAlertView类的实例对象
+	var view = new UIAlertView();
+	// 设置提示对话上的内容
+	view.initWithTitlemessagedelegatecancelButtonTitleotherButtonTitles("自定义标题" // 提示框标题
+		, "使用NJS的原生弹出框，可自定义弹出框的标题、按钮" // 提示框上显示的内容
+		, null // 操作提示框后的通知代理对象，暂不设置
+		, "确定(或者其他字符)" // 提示框上取消按钮的文字
+		, null ); // 提示框上其它按钮的文字，设置为null表示不显示
+	// 调用show方法显示提示对话框
+	view.show();
+}
+/**
+ * 在Android平台通过NJS显示系统提示框
+ */
+function njsAlertForAndroid(){
+	// 创建提示框构造对象，构造函数需要提供程序全局环境对象，通过plus.android.runtimeMainActivity()方法获取
+	var dlg = new AlertDialog.Builder(mainActivity);
+	// 设置提示框标题
+	dlg.setTitle("自定义标题");
+	// 设置提示框内容
+	dlg.setMessage("使用NJS的原生弹出框，可自定义弹出框的标题、按钮");
+	// 设置提示框按钮
+	dlg.setPositiveButton("确定(或者其他字符)",null);
+	// 显示提示框
+	dlg.show();
+}
+function showNjsView(){
+	switch ( plus.os.name ) {
+		case "Android":
+		njsAlertForAndroid();
+		break;
+		case "iOS":
+		njsAlertForiOS();
+		break;
+		default:
+		alert( "此平台不支持！" );
+		break;
+	}
+}
+
+	document.getElementById('btn').addEventListener('tap', function() {
+		showNjsView();
+	});
+	document.getElementById('btn1').addEventListener('tap', function() {
+		plus.nativeUI.alert( 'H5+弹框', function(){
+			alert('确定后alert');
+		}, "温馨提示", '确定' );
+	});
+document.getElementById('btn2').addEventListener('tap', function() {
+	var cmr = plus.camera.getCamera();
+	var res = cmr.supportedImageResolutions[0];
+	var fmt = cmr.supportedImageFormats[0];
+	console.log("Resolution: "+res+", Format: "+fmt);
+	cmr.captureImage( function( path ){
+			alert( "Capture image successddd: " + path );  
+		},
+		function( error ) {
+			alert( "Capture image failed: " + error.message );
+		},
+		{resolution:res,format:fmt}
+	);
+});
+
+(function($) {
+	var network = true;
+		if(mui.os.plus){
+			mui.plusReady(function () {
+				if(plus.networkinfo.getCurrentType()==plus.networkinfo.CONNECTION_NONE){
+					network = false;
+				}
+			});
+		}
+		
+		var success = function(response) {
+			var dataType = 'json';
+			if (dataType === 'json') {
+				response = JSON.stringify(response);
+			} else if (dataType === 'xml') {
+				response = new XMLSerializer().serializeToString(response).replace(/</g, "&lt;").replace(/>/g, "&gt;");
+			}
+			console.log(response);
+			//respnoseEl.innerHTML = response;
+		};
+		//设置全局beforeSend
+		$.ajaxSettings.beforeSend = function(xhr, setting) {
+			//beforeSend演示,也可在$.ajax({beforeSend:function(){}})中设置单个Ajax的beforeSend
+			console.log('beforeSend:::' + JSON.stringify(setting));
+		};
+		//设置全局complete
+		$.ajaxSettings.complete = function(xhr, status) {
+			console.log('complete:::' + status);
+		}
+		
+		var ajax = function() {
+				//利用RunJS的Echo Ajax功能测试
+				var url = 'http://www.runoob.com/try/angularjs/data/Customers_MySQL.php';
+				//请求方式，默认为Get；
+				var type = 'get';
+				//预期服务器范围的数据类型
+				var dataType = 'json';
+				//发送数据
+				var data = {
+					name: "mui",
+					version: "pre-release",
+					author: "chb",
+					description: "最接近原生APP体验的高性能前端框架"
+				};
+				if (type === 'get') {
+					if (dataType === 'json') {
+						$.getJSON(url, data, success);
+					} else {
+						$.get(url, data, success, dataType);
+					}
+				} else if (type === 'post') {
+					$.post(url, data, success, dataType);
+				}
+			};
+			
+			//发送请求按钮的点击事件
+				document.getElementById("ajax").addEventListener('tap', function() {
+					if(network){
+						ajax();
+					}else{
+						mui.toast("当前网络不给力，请稍后再试");
+					}
+				});
+		
+})(mui);
+</script>
+</html>
